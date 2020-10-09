@@ -194,8 +194,14 @@ instance Serialize SchnorrSig where
 #endif
 
 decodeHex :: ConvertibleStrings a ByteString => a -> Maybe ByteString
+#if MIN_VERSION_base16_bytestring(1,0,0)
+decodeHex str = case B16.decode $ cs str of
+  Right bs -> Just bs
+  Left _ -> Nothing
+#else
 decodeHex str = if BS.null r then Just bs else Nothing where
     (bs, r) = B16.decode $ cs str
+#endif
 
 instance Read PubKey where
     readPrec = do

@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP             #-}
+{-# LANGUAGE CPP                        #-}
 {-|
 Module      : Crypto.Secp256k1.Internal
 License     : UNLICENSE
@@ -18,71 +18,6 @@ import           Foreign                (FunPtr, Ptr, castPtr)
 import           Foreign.C              (CInt (..), CSize (..), CString, CUChar,
                                          CUInt (..))
 import           System.IO.Unsafe       (unsafePerformIO)
-
-{-
-data Ctx = Ctx
-
-newtype PubKey64 = PubKey64 { getPubKey64 :: ShortByteString }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-
-newtype Msg32 = Msg32 { getMsg32 :: ShortByteString }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-
-newtype Sig64 = Sig64 { getSig64 :: ShortByteString }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-
-data CompactSig =
-    CompactSig
-        { getCompactSigR :: !ShortByteString
-        , getCompactSigS :: !ShortByteString
-        }
-    deriving (Show, Eq, Ord, Generic, NFData)
-
-newtype RecSig65 = RecSig65 { getRecSig65 :: ShortByteString }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-
-#ifdef RECOVERY
-data CompactRecSig =
-    CompactRecSig
-        { getCompactRecSigR :: !ShortByteString
-        , getCompactRecSigS :: !ShortByteString
-        , getCompactRecSigV :: !Word8
-        }
-    deriving (Show, Eq, Ord, Generic, NFData)
-#endif
-
-newtype Seed32 = Seed32 { getSeed32 :: ShortByteString }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-
-newtype SecKey32 = SecKey32 { getSecKey32 :: ShortByteString }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-
-newtype Tweak32 = Tweak32 { getTweak32 :: ShortByteString }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-
-newtype Nonce32 = Nonce32 { getNonce32 :: ShortByteString }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-
-newtype Algo16 = Algo16 { getAlgo16 :: ShortByteString }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-
-newtype CtxFlags = CtxFlags { getCtxFlags :: CUInt }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-
-newtype SerFlags = SerFlags { getSerFlags :: CUInt }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-
-newtype Ret = Ret { getRet :: CInt }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-
-#ifdef SCHNORR
-newtype XOnlyPubKey64 = XOnlyPubKey64 { getXOnlyPubKey64 :: ShortByteString }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-
-newtype SchnorrSig64 = SchnorrSig64 { getSchnorrSig64 :: ShortByteString }
-    deriving (Read, Show, Eq, Ord, Generic, NFData)
-#endif
--}
 
 data LCtx
 data PubKey64
@@ -131,7 +66,7 @@ uncompressed = 0x0002
 isSuccess :: Ret -> Bool
 isSuccess 0 = False
 isSuccess 1 = True
-isSuccess n = error $ "isSuccess expected 0 or 1 but got " <> show n
+isSuccess n = error $ "isSuccess expected 0 or 1 but got " ++ show n
 
 unsafeUseByteString :: ByteString -> ((Ptr a, CSize) -> IO b) -> IO b
 unsafeUseByteString bs f =

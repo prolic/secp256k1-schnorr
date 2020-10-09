@@ -1,13 +1,13 @@
-cabal-version: 2.0
+cabal-version: 1.24
 
 -- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f64a6c7d68d58fab5fc141dd7bda78089fe9403dc39525641eba1ca0fd92593c
+-- hash: 911c4f6cd260a60f86d8394bdda0aa90dc6cb66e94f5d2adf02a14f7b2d38047
 
 name:           secp256k1-haskell
-version:        0.2.5
+version:        0.4.0
 synopsis:       Bindings for secp256k1
 description:    Sign and verify signatures using the secp256k1 library.
 category:       Crypto
@@ -59,15 +59,16 @@ library
   pkgconfig-depends:
       libsecp256k1
   build-depends:
-      QuickCheck
-    , base >=4.8 && <5
-    , base16-bytestring
-    , bytestring
-    , cereal
-    , deepseq
-    , entropy
-    , hashable
-    , string-conversions
+      QuickCheck         >=2.9.2   && <2.15
+    , base               >=4.9     && <5
+    , base16-bytestring  >=0.1.1.6 && <1.1
+    , bytestring         >=0.10.8  && <0.11
+    , cereal             >=0.5.4   && <0.6
+    , deepseq            >=1.4.2   && <1.5
+    , entropy            >=0.3.8   && <0.5
+    , hashable           >=1.2.6   && <1.4
+    , string-conversions >=0.4     && <0.5
+    , unliftio-core      >=0.1.0   && <0.3
   if flag(ecdh)
     cpp-options: -DECDH
   if flag(schnorr)
@@ -103,6 +104,7 @@ test-suite spec
     , mtl
     , secp256k1-haskell
     , string-conversions
+    , unliftio
   if flag(ecdh)
     cpp-options: -DECDH
   if flag(schnorr)
