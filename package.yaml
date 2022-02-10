@@ -1,15 +1,15 @@
-name: secp256k1-haskell
-version: 0.6.0
+name: secp256k1-schnorr
+version: 0.0.1
 synopsis: Bindings for secp256k1
 description: Sign and verify signatures using the secp256k1 library.
 category: Crypto
-author: Jean-Pierre Rupp
-maintainer: jprupp@protonmail.ch
-copyright: (c) 2017 Jean-Pierre Rupp
+author: Sascha-Oliver Prolic
+maintainer: saschaprolic@googlemail.com
+copyright: (c) 2022 Sascha-Oliver Prolic
 license: MIT
 license-file: LICENSE
-github: haskoin/secp256k1-haskell.git
-homepage: http://github.com/haskoin/secp256k1-haskell#readme
+github: prolic/secp256k1-schnorr.git
+homepage: http://github.com/prolic/secp256k1-schnorr#readme
 verbatim:
   cabal-version: 1.24
 extra-source-files:
@@ -54,7 +54,7 @@ tests:
           hspec-discover:hspec-discover
     dependencies:
       - hspec
-      - secp256k1-haskell
+      - secp256k1-schnorr
       - monad-par
       - mtl
       - HUnit
