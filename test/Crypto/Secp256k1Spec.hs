@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Crypto.Secp256k1Spec (spec) where
 
 import           Control.Monad.Par
