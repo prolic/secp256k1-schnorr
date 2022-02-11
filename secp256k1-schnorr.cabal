@@ -49,9 +49,9 @@ library
   exposed-modules:
       Crypto.Secp256k1
       Crypto.Secp256k1.Internal
-      Paths_secp256k1_haskell
+      Paths_secp256k1_schnorr
   autogen-modules:
-      Paths_secp256k1_haskell
+      Paths_secp256k1_schnorr
   hs-source-dirs:
       src
   pkgconfig-depends:
@@ -83,7 +83,7 @@ test-suite spec
   other-modules:
       Crypto.Secp256k1.InternalSpec
       Crypto.Secp256k1Spec
-      Paths_secp256k1_haskell
+      Paths_secp256k1_schnorr
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N

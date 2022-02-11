@@ -38,7 +38,7 @@ when:
 library:
   source-dirs: src
   generated-exposed-modules:
-    - Paths_secp256k1_haskell
+    - Paths_secp256k1_schnorr
   pkg-config-dependencies:
     - libsecp256k1
 tests:
