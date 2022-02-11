@@ -2,7 +2,7 @@
 
 # Haskell bindings for secp256k1
 
-- forked from [haskoin/secp256k1-schnorr](https://github.com/haskoin/secp256k1-schnorr)
+- forked from [haskoin/secp256k1-haskell](https://github.com/haskoin/secp256k1-haskell)
 - supports schnorr signatures
 
 This project contains Haskell bindings for the

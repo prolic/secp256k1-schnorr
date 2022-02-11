@@ -5,12 +5,12 @@ cabal-version: 1.24
 -- see: https://github.com/sol/hpack
 
 name:           secp256k1-schnorr
-version:        0.6.0
+version:        0.0.1
 synopsis:       Bindings for secp256k1
 description:    Sign and verify signatures using the secp256k1 library.
 category:       Crypto
-homepage:       http://github.com/haskoin/secp256k1-schnorr#readme
-bug-reports:    https://github.com/haskoin/secp256k1-schnorr.git/issues
+homepage:       http://github.com/prolic/secp256k1-schnorr#readme
+bug-reports:    https://github.com/prolic/secp256k1-schnorr.git/issues
 author:         Sascha-Oliver Prolic
 maintainer:     saschaprolic@googlemail.com
 copyright:      (c) 2022 Sascha-Oliver Prolic
@@ -23,7 +23,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/haskoin/secp256k1-schnorr.git
+  location: https://github.com/prolic/secp256k1-schnorr.git
 
 flag ecdh
   description: Enable (experimental) ECDH APIs
