@@ -110,37 +110,6 @@ import           Test.QuickCheck           (Arbitrary (..),
 import           Text.Read                 (Lexeme (String), lexP, parens,
                                             pfail, readPrec)
 
-{- remove all this
-newtype PubKey = PubKey (ForeignPtr PubKey64)
-newtype Msg = Msg (ForeignPtr Msg32)
-newtype Sig = Sig (ForeignPtr Sig64)
-newtype SecKey = SecKey (ForeignPtr SecKey32)
-newtype Tweak = Tweak (ForeignPtr Tweak32)
-newtype RecSig = RecSig (ForeignPtr RecSig65)
-#ifdef SCHNORR
-newtype XOnlyPubKey = XOnlyPubKey (ForeignPtr XOnlyPubKey64)
-newtype SchnorrSig = SchnorrSig (ForeignPtr SchnorrSig64)
-#endif
-
-instance NFData PubKey where
-    rnf (PubKey p) = p `seq` ()
-
-instance NFData Msg where
-    rnf (Msg p) = p `seq` ()
-
-instance NFData Sig where
-    rnf (Sig p) = p `seq` ()
-
-instance NFData SecKey where
-    rnf (SecKey p) = p `seq` ()
-
-instance NFData Tweak where
-    rnf (Tweak p) = p `seq` ()
-
-instance NFData RecSig where
-    rnf (RecSig p) = p `seq` ()
--}
-
 newtype PubKey     = PubKey     { getPubKey     :: ByteString    }
     deriving (Eq, Generic, NFData)
 newtype Msg        = Msg        { getMsg        :: ByteString    }
@@ -194,14 +163,9 @@ instance Serialize SchnorrSig where
 #endif
 
 decodeHex :: ConvertibleStrings a ByteString => a -> Maybe ByteString
-#if MIN_VERSION_base16_bytestring(1,0,0)
-decodeHex str = case B16.decode $ cs str of
+decodeHex str = case B16.decodeBase16 $ cs str of
   Right bs -> Just bs
   Left _ -> Nothing
-#else
-decodeHex str = if BS.null r then Just bs else Nothing where
-    (bs, r) = B16.decode $ cs str
-#endif
 
 instance Read PubKey where
     readPrec = do
@@ -216,7 +180,7 @@ instance IsString PubKey where
         e = error "Could not decode public key from hex string"
 
 instance Show PubKey where
-    showsPrec _ = shows . B16.encode . exportPubKey True
+    showsPrec _ = shows . B16.encodeBase16 . exportPubKey True
 
 instance Read Msg where
     readPrec = parens $ do
@@ -231,7 +195,7 @@ instance IsString Msg where
         e = error "Could not decode message from hex string"
 
 instance Show Msg where
-    showsPrec _ = shows . B16.encode . getMsg
+    showsPrec _ = shows . B16.encodeBase16 . getMsg
 
 instance Read Sig where
     readPrec = parens $ do
@@ -246,7 +210,7 @@ instance Hashable Sig where
     i `hashWithSalt` s = i `hashWithSalt` exportSig s
 
 instance Show Sig where
-    showsPrec _ = shows . B16.encode . exportSig
+    showsPrec _ = shows . B16.encodeBase16 . exportSig
 
 #ifdef RECOVERY
 recSigFromString :: String -> Maybe RecSig
@@ -285,7 +249,7 @@ instance IsString SecKey where
         e = error "Colud not decode secret key from hex string"
 
 instance Show SecKey where
-    showsPrec _ = shows . B16.encode . getSecKey
+    showsPrec _ = shows . B16.encodeBase16 . getSecKey
 
 instance Hashable Tweak where
     i `hashWithSalt` t = i `hashWithSalt` getTweak t
@@ -300,29 +264,7 @@ instance IsString Tweak where
         e = error "Could not decode tweak from hex string"
 
 instance Show Tweak where
-    showsPrec _ = shows . B16.encode . getTweak
-
-{- remove all this
-instance Eq PubKey where
-    fp1 == fp2 = getPubKey fp1 == getPubKey fp2
-
-instance Eq Msg where
-    fm1 == fm2 = getMsg fm1 == getMsg fm2
-
-instance Eq Sig where
-    fg1 == fg2 = exportCompactSig fg1 == exportCompactSig fg2
-
-#ifdef RECOVERY
-instance Eq RecSig where
-    fg1 == fg2 = exportCompactRecSig fg1 == exportCompactRecSig fg2
-#endif
-
-instance Eq SecKey where
-    fk1 == fk2 = getSecKey fk1 == getSecKey fk2
-
-instance Eq Tweak where
-    ft1 == ft2 = getTweak ft1 == getTweak ft2
--}
+    showsPrec _ = shows . B16.encodeBase16 . getTweak
 
 #ifdef SCHNORR
 instance NFData SchnorrSig where
@@ -403,46 +345,14 @@ normalizeSig (Sig sig) = unsafePerformIO $
 -- | 32-Byte 'ByteString' as 'Tweak'.
 tweak :: ByteString -> Maybe Tweak
 tweak bs
-{-- remove this all
-    | BS.length bs == 32 = unsafePerformIO $ do
-        fp <- mallocForeignPtr
-        withForeignPtr fp $ flip poke (Tweak32 (toShort bs))
-        return $ Just $ Tweak fp
-    | otherwise = Nothing
-
--- | Get 32-byte secret key.
-getSecKey :: SecKey -> ByteString
-getSecKey (SecKey fk) =
-    fromShort $ getSecKey32 $ unsafePerformIO $ withForeignPtr fk peek
-
--- Get 64-byte public key.
-getPubKey :: PubKey -> ByteString
-getPubKey (PubKey fp) =
-    fromShort $ getPubKey64 $ unsafePerformIO $ withForeignPtr fp peek
-
--- | Get 32-byte message.
-getMsg :: Msg -> ByteString
-getMsg (Msg fm) =
-    fromShort $ getMsg32 $ unsafePerformIO $ withForeignPtr fm peek
-
--- | Get 32-byte tweak.
-getTweak :: Tweak -> ByteString
-getTweak (Tweak ft) =
-    fromShort $ getTweak32 $ unsafePerformIO $ withForeignPtr ft peek
--}
     | BS.length bs == 32 = Just (Tweak bs)
     | otherwise          = Nothing
 
-
 -- | Import DER-encoded public key.
 importPubKey :: ByteString -> Maybe PubKey
-{- remove this all
-importPubKey bs =  unsafePerformIO $ useByteString bs $ \(b, l) -> do
-    fp <- mallocForeignPtr
-    ret <- withForeignPtr fp $ \p -> ecPubKeyParse ctx p b l
-    if isSuccess ret then return $ Just $ PubKey fp else return Nothing
--}
-importPubKey bs =  unsafePerformIO $
+importPubKey bs
+  | BS.null bs = Nothing
+  | otherwise = unsafePerformIO $
     unsafeUseByteString bs $ \(input, len) -> do
     pub_key <- mallocBytes 64
     ret <- ecPubKeyParse ctx pub_key input len
@@ -456,18 +366,6 @@ importPubKey bs =  unsafePerformIO $
 
 -- | Encode public key as DER. First argument 'True' for compressed output.
 exportPubKey :: Bool -> PubKey -> ByteString
-{- remove this all
-exportPubKey compress (PubKey pub) = unsafePerformIO $
-    withForeignPtr pub $ \p -> alloca $ \l -> allocaBytes z $ \o -> do
-        poke l (fromIntegral z)
-        ret <- ecPubKeySerialize ctx o l p c
-        unless (isSuccess ret) $ error "could not serialize public key"
-        n <- peek l
-        packByteString (o, n)
-  where
-    c = if compress then compressed else uncompressed
-    z = if compress then 33 else 65
--}
 exportPubKey compress (PubKey in_bs) = unsafePerformIO $
     unsafeUseByteString in_bs $ \(in_ptr, _) ->
     alloca $ \len_ptr ->
@@ -477,18 +375,11 @@ exportPubKey compress (PubKey in_bs) = unsafePerformIO $
     unless (isSuccess ret) $ error "could not serialize public key"
     final_len <- peek len_ptr
     packByteString (out_ptr, final_len)
-   where
+  where
     len   = if compress then 33 else 65
     flags = if compress then compressed else uncompressed
 
 exportCompactSig :: Sig -> CompactSig
-{- remove this all
-exportCompactSig (Sig fg) = unsafePerformIO $
-    withForeignPtr fg $ \pg -> alloca $ \pc -> do
-        ret <- ecdsaSignatureSerializeCompact ctx pc pg
-        unless (isSuccess ret) $ error "Could not obtain compact signature"
-        peek pc
--}
 exportCompactSig (Sig sig_bs) = unsafePerformIO $
     unsafeUseByteString sig_bs $ \(sig_ptr, _) -> do
     out_ptr <- mallocBytes 64
@@ -500,13 +391,6 @@ exportCompactSig (Sig sig_bs) = unsafePerformIO $
     return $ CompactSig out_bs
 
 importCompactSig :: CompactSig -> Maybe Sig
-{- remove this all
-importCompactSig c = unsafePerformIO $ alloca $ \pc -> do
-    poke pc c
-    fg <- mallocForeignPtr
-    ret <- withForeignPtr fg $ \pg -> ecdsaSignatureParseCompact ctx pg pc
-    if isSuccess ret then return $ Just $ Sig fg else return Nothing
--}
 importCompactSig (CompactSig compact_sig) = unsafePerformIO $
     unsafeUseByteString compact_sig $ \(compact_ptr, _) -> do
     out_sig <- mallocBytes 64
@@ -521,13 +405,9 @@ importCompactSig (CompactSig compact_sig) = unsafePerformIO $
 
 -- | Import DER-encoded signature.
 importSig :: ByteString -> Maybe Sig
-importSig bs = unsafePerformIO $
-    {- remove this all
-    useByteString bs $ \(b, l) -> do
-        fg <- mallocForeignPtr
-        ret <- withForeignPtr fg $ \g -> ecdsaSignatureParseDer ctx g b l
-        if isSuccess ret then return $ Just $ Sig fg else return Nothing
-    -}
+importSig bs
+  | BS.null bs = Nothing
+  | otherwise = unsafePerformIO $
     unsafeUseByteString bs $ \(in_ptr, in_len) -> do
     out_sig <- mallocBytes 64
     ret <- ecdsaSignatureParseDer ctx out_sig in_ptr in_len
@@ -541,15 +421,6 @@ importSig bs = unsafePerformIO $
 
 -- | Encode signature as strict DER.
 exportSig :: Sig -> ByteString
-{- remove this all
-exportSig (Sig fg) = unsafePerformIO $
-    withForeignPtr fg $ \g -> alloca $ \l -> allocaBytes 72 $ \o -> do
-        poke l 72
-        ret <- ecdsaSignatureSerializeDer ctx o l g
-        unless (isSuccess ret) $ error "could not serialize signature"
-        n <- peek l
-        packByteString (o, n)
--}
 exportSig (Sig in_sig) = unsafePerformIO $
     unsafeUseByteString in_sig $ \(in_ptr, _) ->
     alloca $ \out_len ->
@@ -562,11 +433,6 @@ exportSig (Sig in_sig) = unsafePerformIO $
 
 -- | Verify message signature. 'True' means that the signature is correct.
 verifySig :: PubKey -> Sig -> Msg -> Bool
-{- remove this all
-verifySig (PubKey fp) (Sig fg) (Msg fm) = unsafePerformIO $
-    withForeignPtr fp $ \p -> withForeignPtr fg $ \g ->
-        withForeignPtr fm $ \m -> isSuccess <$> ecdsaVerify ctx g m p
--}
 verifySig (PubKey pub_key) (Sig sig) (Msg m) = unsafePerformIO $
     unsafeUseByteString pub_key $ \(pub_key_ptr, _) ->
     unsafeUseByteString sig $ \(sig_ptr, _) ->
@@ -574,14 +440,6 @@ verifySig (PubKey pub_key) (Sig sig) (Msg m) = unsafePerformIO $
     isSuccess <$> ecdsaVerify ctx sig_ptr msg_ptr pub_key_ptr
 
 signMsg :: SecKey -> Msg -> Sig
-{- remove this all
-signMsg (SecKey fk) (Msg fm) = unsafePerformIO $
-    withForeignPtr fk $ \k -> withForeignPtr fm $ \m -> do
-        fg <- mallocForeignPtr
-        ret <- withForeignPtr fg $ \g -> ecdsaSign ctx g m k nullPtr nullPtr
-        unless (isSuccess ret) $ error "could not sign message"
-        return $ Sig fg
--}
 signMsg (SecKey sec_key) (Msg m) = unsafePerformIO $
     unsafeUseByteString sec_key $ \(sec_key_ptr, _) ->
     unsafeUseByteString m $ \(msg_ptr, _) -> do
@@ -593,13 +451,6 @@ signMsg (SecKey sec_key) (Msg m) = unsafePerformIO $
     Sig <$> unsafePackByteString (sig_ptr, 64)
 
 derivePubKey :: SecKey -> PubKey
-{- remove this all
-derivePubKey (SecKey fk) = unsafePerformIO $ withForeignPtr fk $ \k -> do
-    fp <- mallocForeignPtr
-    ret <- withForeignPtr fp $ \p -> ecPubKeyCreate ctx p k
-    unless (isSuccess ret) $ error "could not compute public key"
-    return $ PubKey fp
--}
 derivePubKey (SecKey sec_key) = unsafePerformIO $
     unsafeUseByteString sec_key $ \(sec_key_ptr, _) -> do
     pub_key_ptr <- mallocBytes 64
@@ -612,16 +463,6 @@ derivePubKey (SecKey sec_key) = unsafePerformIO $
 
 -- | Add tweak to secret key.
 tweakAddSecKey :: SecKey -> Tweak -> Maybe SecKey
-{- remove this all
-tweakAddSecKey (SecKey fk) (Tweak ft) = unsafePerformIO $
-    withForeignPtr fk $ \k -> withForeignPtr ft $ \t -> do
-        fk' <- mallocForeignPtr
-        ret <- withForeignPtr fk' $ \k' ->  do
-            key <- peek k
-            poke k' key
-            ecSecKeyTweakAdd ctx k' t
-        if isSuccess ret then return $ Just $ SecKey fk' else return Nothing
--}
 tweakAddSecKey (SecKey sec_key) (Tweak t) = unsafePerformIO $
     unsafeUseByteString new_bs $ \(sec_key_ptr, _) ->
     unsafeUseByteString t $ \(tweak_ptr, _) -> do
@@ -634,16 +475,6 @@ tweakAddSecKey (SecKey sec_key) (Tweak t) = unsafePerformIO $
 
 -- | Multiply secret key by tweak.
 tweakMulSecKey :: SecKey -> Tweak -> Maybe SecKey
-{- remove this all
-tweakMulSecKey (SecKey fk) (Tweak ft) = unsafePerformIO $
-    withForeignPtr fk $ \k -> withForeignPtr ft $ \t -> do
-        fk' <- mallocForeignPtr
-        ret <- withForeignPtr fk' $ \k' ->  do
-            key <- peek k
-            poke k' key
-            ecSecKeyTweakMul ctx k' t
-        if isSuccess ret then return $ Just $ SecKey fk' else return Nothing
--}
 tweakMulSecKey (SecKey sec_key) (Tweak t) = unsafePerformIO $
     unsafeUseByteString new_bs $ \(sec_key_ptr, _) ->
     unsafeUseByteString t $ \(tweak_ptr, _) -> do
@@ -656,16 +487,6 @@ tweakMulSecKey (SecKey sec_key) (Tweak t) = unsafePerformIO $
 
 -- | Add tweak to public key. Tweak is multiplied first by G to obtain a point.
 tweakAddPubKey :: PubKey -> Tweak -> Maybe PubKey
-{- remove this all
-tweakAddPubKey (PubKey fp) (Tweak ft) = unsafePerformIO $
-    withForeignPtr fp $ \p -> withForeignPtr ft $ \t -> do
-        fp' <- mallocForeignPtr
-        ret <- withForeignPtr fp' $ \p' ->  do
-            pub <- peek p
-            poke p' pub
-            ecPubKeyTweakAdd ctx p' t
-        if isSuccess ret then return $ Just $ PubKey fp' else return Nothing
--}
 tweakAddPubKey (PubKey pub_key) (Tweak t) = unsafePerformIO $
     unsafeUseByteString new_bs $ \(pub_key_ptr, _) ->
     unsafeUseByteString t $ \(tweak_ptr, _) -> do
@@ -679,16 +500,6 @@ tweakAddPubKey (PubKey pub_key) (Tweak t) = unsafePerformIO $
 -- | Multiply public key by tweak. Tweak is multiplied first by G to obtain a
 -- point.
 tweakMulPubKey :: PubKey -> Tweak -> Maybe PubKey
-{- remove this all
-tweakMulPubKey (PubKey fp) (Tweak ft) = unsafePerformIO $
-    withForeignPtr fp $ \p -> withForeignPtr ft $ \t -> do
-        fp' <- mallocForeignPtr
-        ret <- withForeignPtr fp' $ \p' ->  do
-            pub <- peek p
-            poke p' pub
-            ecPubKeyTweakMul ctx p' t
-        if isSuccess ret then return $ Just $ PubKey fp' else return Nothing
--}
 tweakMulPubKey (PubKey pub_key) (Tweak t) = unsafePerformIO $
     unsafeUseByteString new_bs $ \(pub_key_ptr, _) ->
     unsafeUseByteString t $ \(tweak_ptr, _) -> do
@@ -705,15 +516,6 @@ combinePubKeys [] = Nothing
 combinePubKeys pubs = unsafePerformIO $
     pointers [] pubs $ \ps ->
     allocaArray (length ps) $ \a -> do
-        {- remove this all
-        pokeArray a ps
-        fp <- mallocForeignPtr
-        ret <- withForeignPtr fp $ \p ->
-            ecPubKeyCombine ctx p a (fromIntegral $ length ps)
-        if isSuccess ret
-            then return $ Just $ PubKey fp
-            else return Nothing
-        -}
     out <- mallocBytes 64
     pokeArray a ps
     ret <- ecPubKeyCombine ctx out a (fromIntegral $ length ps)
@@ -726,10 +528,6 @@ combinePubKeys pubs = unsafePerformIO $
             return Nothing
   where
     pointers ps [] f = f ps
-    {- remove this all
-    pointers ps (PubKey fp : pubs') f =
-        withForeignPtr fp $ \p -> pointers (p:ps) pubs' f
-    -}
     pointers ps (PubKey pub_key : pub_keys) f =
         unsafeUseByteString pub_key $ \(p, _) ->
         pointers (p : ps) pub_keys f
@@ -792,18 +590,6 @@ recover (RecSig frg) (Msg fm) = withContext $ \ctx ->
 
 #ifdef NEGATE
 tweakNegate :: Tweak -> Maybe Tweak
-{- remove this all
-tweakNegate (Tweak fk) = withContext $ \ctx -> do
-    fnew <- mallocForeignPtr
-    peeked <- withForeignPtr fk peek
-    ret <- withForeignPtr fnew $ \n -> do
-        poke n peeked
-        ecTweakNegate ctx n
-    return $
-        if isSuccess ret
-            then Just (Tweak fnew)
-            else Nothing
--}
 tweakNegate (Tweak t) = unsafePerformIO $
     unsafeUseByteString new $ \(out, _) -> do
     ret <- ecTweakNegate ctx out
