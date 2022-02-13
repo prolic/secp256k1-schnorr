@@ -6,8 +6,8 @@ cabal-version: 1.24
 
 name:           secp256k1-schnorr
 version:        0.0.1
-synopsis:       Bindings for secp256k1
-description:    Sign and verify signatures using the secp256k1 library.
+synopsis:       Schnorr signatures for secp256k1
+description:    Schnorr signatures using the secp256k1 library.
 category:       Crypto
 homepage:       http://github.com/prolic/secp256k1-schnorr#readme
 bug-reports:    https://github.com/prolic/secp256k1-schnorr.git/issues
@@ -25,21 +25,6 @@ source-repository head
   type: git
   location: https://github.com/prolic/secp256k1-schnorr.git
 
-flag ecdh
-  description: Enable (experimental) ECDH APIs
-  manual: True
-  default: False
-
-flag negate
-  description: Enable tweak negate
-  manual: True
-  default: False
-
-flag recovery
-  description: Enable signature key recovery APIs
-  manual: True
-  default: False
-
 flag schnorr
   description: Enable BIP-340 (Schnorr) APIs
   manual: True
@@ -47,10 +32,9 @@ flag schnorr
 
 library
   exposed-modules:
-      Crypto.Secp256k1
-      Crypto.Secp256k1.Internal
-      Paths_secp256k1_schnorr
-  autogen-modules:
+      Crypto.Schnorr
+      Crypto.Schnorr.Internal
+  other-modules:
       Paths_secp256k1_schnorr
   hs-source-dirs:
       src
@@ -67,22 +51,15 @@ library
     , hashable >=1.2.6 && <1.4
     , string-conversions ==0.4.*
     , unliftio-core >=0.1.0 && <0.3
-  if flag(ecdh)
-    cpp-options: -DECDH
   if flag(schnorr)
     cpp-options: -DSCHNORR
-  if flag(recovery)
-    cpp-options: -DRECOVERY
-  if flag(negate)
-    cpp-options: -DNEGATE
   default-language: Haskell2010
 
 test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Crypto.Secp256k1.InternalSpec
-      Crypto.Secp256k1Spec
+      Crypto.SchnorrSpec
       Paths_secp256k1_schnorr
   hs-source-dirs:
       test
@@ -98,18 +75,9 @@ test-suite spec
     , entropy >=0.3.8 && <0.5
     , hashable >=1.2.6 && <1.4
     , hspec
-    , monad-par
     , mtl
     , secp256k1-schnorr
     , string-conversions ==0.4.*
     , unliftio-core >=0.1.0 && <0.3
-  if flag(ecdh)
-    cpp-options: -DECDH
-  if flag(schnorr)
-    cpp-options: -DSCHNORR
-  if flag(recovery)
-    cpp-options: -DRECOVERY
-  if flag(negate)
-    cpp-options: -DNEGATE
   default-language: Haskell2010
   build-tool-depends: hspec-discover:hspec-discover

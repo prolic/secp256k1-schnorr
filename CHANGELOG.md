@@ -6,6 +6,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## 0.0.1
 ### Initial Release
-- Readd ECDH support.
-- Readd Schnorr support.
-- Readd Recovery support.
+- Add Schnorr support.
