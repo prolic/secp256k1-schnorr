@@ -29,7 +29,6 @@ data Sig64
 data Compact64
 data Seed32
 data SecKey32
-data Tweak32
 
 type CtxFlags = CUInt
 type SerFlags = CUInt
@@ -95,38 +94,6 @@ foreign import ccall safe
     -> IO Ctx
 
 foreign import ccall safe
-    "secp256k1.h secp256k1_ec_privkey_negate"
-    ecTweakNegate
-    :: Ctx
-    -> Ptr Tweak32
-    -> IO Ret
-
-foreign import ccall safe
-    "secp256k1.h secp256k1_xonly_pubkey_tweak_add"
-    schnorrPubKeyTweakAdd
-    :: Ctx
-    -> Ptr XOnlyPubKey64
-    -> Ptr CInt
-    -> Ptr Tweak32
-    -> IO Ret
-
-foreign import ccall safe
-    "secp256k1.h secp256k1_xonly_seckey_tweak_add"
-    schnorrSecKeyTweakAdd
-    :: Ctx
-    -> Ptr SecKey32
-    -> Ptr Tweak32
-    -> IO Ret
-
-foreign import ccall safe
-    "secp256k1.h secp256k1_schnorrsig_serialize"
-    signatureSerializeSchnorr
-    :: Ctx
-    -> Ptr CUChar -- ^ array for encoded signature, must be large enough
-    -> Ptr SchnorrSig64
-    -> IO Ret
-
-foreign import ccall safe
     "secp256k1.h secp256k1_schnorrsig_sign"
     schnorrSign
     :: Ctx
@@ -138,16 +105,6 @@ foreign import ccall safe
     -- but we pass a nullFunPtr (and this module is Internal), so it doesn't matter right now.
     -> FunPtr (NonceFun a)
     -> Ptr a -- ^ nonce data
-    -> IO Ret
-
-foreign import ccall safe
-    "secp256k1.h secp256k1_xonly_pubkey_tweak_test"
-    xOnlyPubKeyTweakTest
-    :: Ctx
-    -> Ptr XOnlyPubKey64 -- output_pubkey
-    -> CInt -- is_negated
-    -> Ptr XOnlyPubKey64 -- internal_pubkey
-    -> Ptr Tweak32
     -> IO Ret
 
 foreign import ccall safe
@@ -168,25 +125,9 @@ foreign import ccall safe
     -> IO Ret
 
 foreign import ccall safe
-    "secp256k1.h secp256k1_schnorrsig_parse"
-    schnorrSignatureParse
-    :: Ctx
-    -> Ptr SchnorrSig64 -- out
-    -> Ptr CUChar -- in
-    -> IO Ret
-
-foreign import ccall safe
     "secp256k1.h secp256k1_xonly_pubkey_parse"
     schnorrXOnlyPubKeyParse
     :: Ctx
     -> Ptr XOnlyPubKey64 -- out
     -> Ptr CUChar -- in
-    -> IO Ret
-
-foreign import ccall safe
-    "secp256k1.h secp256k1_xonly_pubkey_create"
-    schnorrXOnlyPubKeyCreate
-    :: Ctx
-    -> Ptr XOnlyPubKey64
-    -> Ptr SecKey32
     -> IO Ret

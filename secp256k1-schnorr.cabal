@@ -28,7 +28,7 @@ source-repository head
 flag schnorr
   description: Enable BIP-340 (Schnorr) APIs
   manual: True
-  default: False
+  default: True
 
 library
   exposed-modules:
@@ -38,6 +38,8 @@ library
       Paths_secp256k1_schnorr
   hs-source-dirs:
       src
+  extra-lib-dirs:
+      /usr/local/lib
   pkgconfig-depends:
       libsecp256k1
   build-depends:
@@ -63,7 +65,11 @@ test-suite spec
       Paths_secp256k1_schnorr
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -lsecp256k1
+  extra-lib-dirs:
+      /usr/local/lib
+  pkgconfig-depends:
+      libsecp256k1
   build-depends:
       HUnit
     , QuickCheck >=2.9.2 && <2.15

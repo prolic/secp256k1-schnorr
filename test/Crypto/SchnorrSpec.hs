@@ -45,8 +45,6 @@ spec = do
                 hexToBytes "243f6a8885a308d313198a2e03707344a4093822299f31d0082efa98ec4e6c89",
                 hexToBytes "f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9935554d1aa5f0374e5cdaacb3925035c7c169b27c4426df0a6b19af3baeab138"
               )
-        it "makes a valid taproot key spend signature" $
-            property taprootKeySpend
 
 hexToBytes :: String -> BS.ByteString
 hexToBytes = fromRight undefined . B16.decodeBase16 . B8.pack
@@ -112,22 +110,3 @@ passingVectorToAssertion idx (secBytes, msgBytes, sigBytes) =
         sec <- secKey secBytes
         msg <- msg $ msgBytes
         pure $ signMsgSchnorr sec msg
-
--- This test is ported from the C code, it is called 'test_schnorrsig_taproot'.
--- But this version was modified to use fixed keys and messages.
-taprootKeySpend :: Assertion
-taprootKeySpend =
-    assertEqual "derivation succeded and resulting signature is valid" (Just True) computed
-  where
-    computed = do
-        sec <- secKey $ BS.replicate 32 32
-        msgToSign <- msg $ BS.replicate 32 00
-
-        let internalPub = deriveXOnlyPubKey sec
-        twea <- tweak $ exportXOnlyPubKey internalPub
-        (outputPub, isNegated) <- schnorrTweakAddPubKey internalPub twea
-
-        -- This is a 'key spend' in Taproot terminology:
-        tweakSec <- schnorrTweakAddSecKey sec twea
-        let sig = signMsgSchnorr tweakSec msgToSign
-        pure $ verifyMsgSchnorr outputPub sig msgToSign

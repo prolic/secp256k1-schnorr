@@ -14,9 +14,7 @@ Schnorr signatures from Bitcoin’s secp256k1 library.
 -}
 module Crypto.Schnorr
     ( Msg
-    , Tweak
     , SecKey
-    , tweak
     , msg
     , secKey
     , getSecKey
@@ -24,15 +22,9 @@ module Crypto.Schnorr
     , XOnlyPubKey
     , SchnorrSig
     , signMsgSchnorr
-    , exportSchnorrSig
     , importSchnorrSig
-    , exportXOnlyPubKey
     , importXOnlyPubKey
     , verifyMsgSchnorr
-    , deriveXOnlyPubKey
-    , schnorrTweakAddPubKey
-    , schnorrTweakAddSecKey
-    , testTweakXOnlyPubKey
     ) where
 
 import           Control.DeepSeq           (NFData)
@@ -67,8 +59,6 @@ newtype Msg        = Msg        { getMsg        :: ByteString    }
     deriving (Eq, Generic, NFData)
 newtype SecKey     = SecKey     { getSecKey     :: ByteString    }
     deriving (Eq, Generic, NFData)
-newtype Tweak      = Tweak      { getTweak      :: ByteString    }
-    deriving (Eq, Generic, NFData)
 
 instance Serialize XOnlyPubKey where
     put (XOnlyPubKey bs) = putByteString bs
@@ -86,12 +76,8 @@ instance Serialize SecKey where
     put (SecKey bs) = putByteString bs
     get = SecKey <$> getByteString 32
 
-instance Serialize Tweak where
-    put (Tweak bs) = putByteString bs
-    get = Tweak <$> getByteString 32
-
 instance Show SchnorrSig where
-    showsPrec _ = shows . B16.encodeBase16 . exportSchnorrSig
+    showsPrec _ = shows . B16.encodeBase16 . getSchnorrSig
 
 instance Read SchnorrSig where
     readPrec = parens $ do
@@ -103,10 +89,10 @@ instance IsString SchnorrSig where
         e = error "Could not decode Schnorr signature from hex string"
 
 instance Hashable SchnorrSig where
-    i `hashWithSalt` s = i `hashWithSalt` exportSchnorrSig s
+    i `hashWithSalt` s = i `hashWithSalt` getSchnorrSig s
 
 instance Show XOnlyPubKey where
-    showsPrec _ = shows . B16.encodeBase16 . exportXOnlyPubKey
+    showsPrec _ = shows . B16.encodeBase16 . getXOnlyPubKey
 
 instance Read XOnlyPubKey where
     readPrec = do
@@ -118,7 +104,7 @@ instance IsString XOnlyPubKey where
         e = error "Could not decode public key from hex string"
 
 instance Hashable XOnlyPubKey where
-    i `hashWithSalt` k = i `hashWithSalt` exportXOnlyPubKey k
+    i `hashWithSalt` k = i `hashWithSalt` getXOnlyPubKey k
 
 instance Read Msg where
     readPrec = parens $ do
@@ -150,45 +136,6 @@ instance IsString SecKey where
 instance Show SecKey where
     showsPrec _ = shows . B16.encodeBase16 . getSecKey
 
-instance Hashable Tweak where
-    i `hashWithSalt` t = i `hashWithSalt` getTweak t
-
-instance Read Tweak where
-    readPrec = parens $ do
-        String str <- lexP
-        maybe pfail return $ tweak =<< decodeHex str
-
-instance IsString Tweak where
-    fromString = fromMaybe e . (tweak <=< decodeHex) where
-        e = error "Could not decode tweak from hex string"
-
-instance Show Tweak where
-    showsPrec _ = shows . B16.encodeBase16 . getTweak
-
-schnorrTweakAddPubKey :: XOnlyPubKey -> Tweak -> Maybe (XOnlyPubKey, CInt)
-schnorrTweakAddPubKey (XOnlyPubKey fp) (Tweak ft) = unsafePerformIO $
-    unsafeUseByteString new_bs $ \(pub_key_ptr, _) ->
-    unsafeUseByteString ft $ \(tweak_ptr, _) -> do
-    alloca $ \is_negated -> do
-        ret <- schnorrPubKeyTweakAdd ctx pub_key_ptr is_negated tweak_ptr
-        peeked_is_negated <- peek is_negated
-        if isSuccess ret
-            then return $ Just $ (XOnlyPubKey new_bs, peeked_is_negated)
-            else return Nothing
-    where
-        new_bs = BS.copy fp
-
-schnorrTweakAddSecKey :: SecKey -> Tweak -> Maybe SecKey
-schnorrTweakAddSecKey (SecKey sec_key) (Tweak t) = unsafePerformIO $
-    unsafeUseByteString new_bs $ \(sec_key_ptr, _) ->
-    unsafeUseByteString t $ \(tweak_ptr, _) -> do
-    ret <- schnorrSecKeyTweakAdd ctx sec_key_ptr tweak_ptr
-    if isSuccess ret
-        then return $ Just $ SecKey new_bs
-        else return Nothing
-  where
-    new_bs = BS.copy sec_key
-
 signMsgSchnorr :: SecKey -> Msg -> SchnorrSig
 signMsgSchnorr (SecKey sec_key) (Msg m) = unsafePerformIO $
     unsafeUseByteString sec_key $ \(sec_key_ptr, _) ->
@@ -199,14 +146,6 @@ signMsgSchnorr (SecKey sec_key) (Msg m) = unsafePerformIO $
         free sig_ptr
         error "could not schnorr-sign message"
     SchnorrSig <$> unsafePackByteString (sig_ptr, 64)
-
-exportSchnorrSig :: SchnorrSig -> ByteString
-exportSchnorrSig (SchnorrSig in_sig) = unsafePerformIO $
-    unsafeUseByteString in_sig $ \(in_ptr, _) ->
-    allocaBytes 64 $ \out_ptr -> do
-    ret <- signatureSerializeSchnorr ctx out_ptr in_ptr
-    unless (isSuccess ret) $ error "could not serialize schnorr signature"
-    packByteString (out_ptr, 64)
 
 importXOnlyPubKey :: ByteString -> Maybe XOnlyPubKey
 importXOnlyPubKey bs
@@ -224,15 +163,7 @@ importXOnlyPubKey bs
 
 importSchnorrSig :: ByteString -> Maybe SchnorrSig
 importSchnorrSig bs
-    | BS.length bs == 64 = unsafePerformIO $
-        unsafeUseByteString bs $ \(in_ptr, in_len) -> do
-            fp <- mallocBytes 64
-            ret <- schnorrSignatureParse ctx fp in_ptr
-            if isSuccess ret
-                then do
-                    io <- unsafePackByteString (fp, 64)
-                    return $ Just $ SchnorrSig io
-                else return Nothing
+    | BS.length bs == 64 = Just $ SchnorrSig { getSchnorrSig = bs }
     | otherwise = Nothing
 
 verifyMsgSchnorr :: XOnlyPubKey -> SchnorrSig -> Msg -> Bool
@@ -241,36 +172,6 @@ verifyMsgSchnorr (XOnlyPubKey fp) (SchnorrSig fg) (Msg fm) = unsafePerformIO $
     unsafeUseByteString fg $ \(g, _) ->
     unsafeUseByteString fm $ \(m, _) ->
     isSuccess <$> schnorrSignatureVerify ctx g m p
-
-exportXOnlyPubKey :: XOnlyPubKey -> ByteString
-exportXOnlyPubKey (XOnlyPubKey pub) = unsafePerformIO $
-    unsafeUseByteString pub $ \(in_ptr, in_len) -> do
-        allocaBytes 32 $ \o -> do
-            ret <- schnorrPubKeySerialize ctx o in_ptr
-            unless (isSuccess ret) $ error "could not serialize x-only public key"
-            packByteString (in_ptr, 32)
-
-deriveXOnlyPubKey :: SecKey -> XOnlyPubKey
-deriveXOnlyPubKey (SecKey fk) = unsafePerformIO $
-    unsafeUseByteString fk $ \(in_ptr, in_len) -> do
-        fp <- mallocBytes 64
-        ret <- schnorrXOnlyPubKeyCreate ctx fp in_ptr
-        unless (isSuccess ret) $ error "could not derive x-only public key"
-        io <- unsafePackByteString (fp, 64)
-        return $ XOnlyPubKey io
-
-testTweakXOnlyPubKey :: XOnlyPubKey -> CInt -> XOnlyPubKey -> Tweak -> Bool
-testTweakXOnlyPubKey (XOnlyPubKey fp) is_negated (XOnlyPubKey internal) (Tweak ft) = unsafePerformIO $
-    unsafeUseByteString fp $ \(p, _) ->
-    unsafeUseByteString internal $ \(internalp, _) ->
-    unsafeUseByteString ft $ \(t, _) -> do
-        ret <- xOnlyPubKeyTweakTest ctx p is_negated internalp t
-        return $ isSuccess ret
-
-instance Arbitrary XOnlyPubKey where
-    arbitrary = do
-        key <- arbitrary
-        return $ deriveXOnlyPubKey key
 
 instance Arbitrary Msg where
     arbitrary = gen_msg
@@ -301,19 +202,3 @@ secKey :: ByteString -> Maybe SecKey
 secKey bs
     | BS.length bs == 32 = Just (SecKey bs)
     | otherwise = Nothing
-
--- | 32-Byte 'ByteString' as 'Tweak'.
-tweak :: ByteString -> Maybe Tweak
-tweak bs
-    | BS.length bs == 32 = Just (Tweak bs)
-    | otherwise          = Nothing
-
-tweakNegate :: Tweak -> Maybe Tweak
-tweakNegate (Tweak t) = unsafePerformIO $
-    unsafeUseByteString new $ \(out, _) -> do
-    ret <- ecTweakNegate ctx out
-    if isSuccess ret
-        then return (Just (Tweak new))
-        else return Nothing
-  where
-    new = BS.copy t

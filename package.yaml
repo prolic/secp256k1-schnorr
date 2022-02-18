@@ -30,6 +30,8 @@ library:
   source-dirs: src
   pkg-config-dependencies:
     - libsecp256k1
+  extra-lib-dirs:
+    - /usr/local/lib
   when:
   - condition: flag(schnorr)
     cpp-options: -DSCHNORR
@@ -37,10 +39,13 @@ tests:
   spec:
     main: Spec.hs
     source-dirs: test
+    pkg-config-dependencies:
+      - libsecp256k1
     ghc-options:
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
+      - -lsecp256k1
     verbatim:
       build-tool-depends:
           hspec-discover:hspec-discover
@@ -49,9 +54,11 @@ tests:
       - secp256k1-schnorr
       - mtl
       - HUnit
+    extra-lib-dirs:
+      - /usr/local/lib
 
 flags:
   schnorr:
     description: "Enable BIP-340 (Schnorr) APIs"
     manual: true
-    default: false
+    default: true
