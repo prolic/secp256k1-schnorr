@@ -29,6 +29,7 @@ data Sig64
 data Compact64
 data Seed32
 data SecKey32
+data KeyPair96
 
 type CtxFlags = CUInt
 type SerFlags = CUInt
@@ -108,19 +109,12 @@ foreign import ccall safe
     -> IO Ret
 
 foreign import ccall safe
-    "secp256k1.h secp256k1_xonly_pubkey_serialize"
-    schnorrPubKeySerialize
-    :: Ctx
-    -> Ptr CUChar -- 32 bytes output buffer
-    -> Ptr XOnlyPubKey64
-    -> IO Ret
-
-foreign import ccall safe
     "secp256k1.h secp256k1_schnorrsig_verify"
     schnorrSignatureVerify
     :: Ctx
     -> Ptr SchnorrSig64
-    -> Ptr Msg32
+    -> Ptr CUChar
+    -> CInt
     -> Ptr XOnlyPubKey64
     -> IO Ret
 
@@ -130,4 +124,75 @@ foreign import ccall safe
     :: Ctx
     -> Ptr XOnlyPubKey64 -- out
     -> Ptr CUChar -- in
+    -> IO Ret
+
+foreign import ccall safe
+    "secp256k1.h secp256k1_xonly_pubkey_serialize"
+    schnorrPubKeySerialize
+    :: Ctx
+    -> Ptr CUChar -- 32 bytes output buffer
+    -> Ptr XOnlyPubKey64
+    -> IO Ret
+
+-- starting here
+foreign import ccall safe
+    "secp256k1.h secp256k1_ec_seckey_verify"
+    ecSecKeyVerify
+    :: Ctx
+    -> Ptr SecKey32
+    -> IO Ret
+
+foreign import ccall safe
+    "secp256k1.h secp256k1_xonly_pubkey_from_pubkey"
+    xOnlyPubKeyFromPubKey
+    :: Ctx
+    -> Ptr XOnlyPubKey64
+    -> CInt
+    -> Ptr PubKey64
+    -> IO Ret
+
+-- int secp256k1_keypair_create(const secp256k1_context* ctx, secp256k1_keypair *keypair, const unsigned char *seckey32) {
+foreign import ccall unsafe
+    "secp256k1.h secp256k1_keypair_create"
+    keyPairCreate
+    :: Ctx
+    -> Ptr KeyPair96
+    -> Ptr SecKey32
+    -> IO Ret
+
+-- int secp256k1_keypair_sec(const secp256k1_context* ctx, unsigned char *seckey, const secp256k1_keypair *keypair) {
+foreign import ccall safe
+    "secp256k1.h secp256k1_keypair_sec"
+    keyPairSecKey
+    :: Ctx
+    -> Ptr SecKey32
+    -> Ptr KeyPair96
+    -> IO Ret
+
+-- int secp256k1_keypair_pub(const secp256k1_context* ctx, secp256k1_pubkey *pubkey, const secp256k1_keypair *keypair) {
+foreign import ccall safe
+    "secp256k1.h secp256k1_keypair_pub"
+    keyPairPubKey
+    :: Ctx
+    -> Ptr PubKey64
+    -> Ptr KeyPair96
+    -> IO Ret
+
+-- int secp256k1_keypair_xonly_pub(const secp256k1_context* ctx, secp256k1_xonly_pubkey *pubkey, int *pk_parity, const secp256k1_keypair *keypair) {
+foreign import ccall safe
+    "secp256k1.h secp256k1_keypair_xonly_pub"
+    keyPairXOnlyPubKey
+    :: Ctx
+    -> Ptr PubKey64
+    -> CInt
+    -> Ptr KeyPair96
+    -> IO Ret
+
+-- from origin
+foreign import ccall safe
+    "secp256k1.h secp256k1_ec_pubkey_create"
+    ecPubKeyCreate
+    :: Ctx
+    -> Ptr PubKey64
+    -> Ptr SecKey32
     -> IO Ret
