@@ -13,6 +13,7 @@ module Crypto.Schnorr.Internal where
 
 import           Data.ByteString        (ByteString)
 import qualified Data.ByteString        as BS
+import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Unsafe as BU
 import           Foreign                (FunPtr, Ptr, castPtr)
 import           Foreign.C              (CInt (..), CSize (..), CString, CUChar,
@@ -54,12 +55,6 @@ sign = 0x0201
 
 signVerify :: CtxFlags
 signVerify = 0x0301
-
-compressed :: SerFlags
-compressed = 0x0102
-
-uncompressed :: SerFlags
-uncompressed = 0x0002
 
 isSuccess :: Ret -> Bool
 isSuccess 0 = False
@@ -114,7 +109,7 @@ foreign import ccall safe
     :: Ctx
     -> Ptr SchnorrSig64
     -> Ptr CUChar
-    -> CInt
+    -> CUInt
     -> Ptr XOnlyPubKey64
     -> IO Ret
 
@@ -134,6 +129,15 @@ foreign import ccall safe
     -> Ptr XOnlyPubKey64
     -> IO Ret
 
+-- int secp256k1_xonly_pubkey_cmp(const secp256k1_context* ctx, const secp256k1_xonly_pubkey* pk0, const secp256k1_xonly_pubkey* pk1) {
+foreign import ccall safe
+    "secp256k1.h secp256k1_xonly_pubkey_cmp"
+    xOnlyPubKeyCompare
+    :: Ctx
+    -> Ptr XOnlyPubKey64
+    -> Ptr XOnlyPubKey64
+    -> IO Ret
+
 -- starting here
 foreign import ccall safe
     "secp256k1.h secp256k1_ec_seckey_verify"
@@ -147,7 +151,7 @@ foreign import ccall safe
     xOnlyPubKeyFromPubKey
     :: Ctx
     -> Ptr XOnlyPubKey64
-    -> CInt
+    -> Ptr CInt
     -> Ptr PubKey64
     -> IO Ret
 
