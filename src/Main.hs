@@ -5,6 +5,7 @@ import Crypto.Schnorr
 import Crypto.Random.DRBG
 import Data.ByteString.UTF8
 import Data.Maybe
+import qualified Data.ByteString           as BS
 
 main :: IO ()
 main = do
@@ -17,8 +18,22 @@ main = do
     let mySec = fromJust $ secKey $ hexToBytes myprivatekey
     let derivedPub = derivePubKey mySec
 
-    let myXPub = fromJust $ importXOnlyPubKey $ hexToBytes myprivatekey
+    let myXPub = fromJust $ importXOnlyPubKey $ hexToBytes mypublickey
     let myX = deriveXOnlyPubKey derivedPub
+
+    keypair <- generateKeyPair
+    let secKey = deriveSecKey keypair
+    let p = derivePubKey secKey
+    let x = deriveXOnlyPubKey p
+
+    let raw_msg = "Hello, World!"
+    let hash_msg = hash $ fromString raw_msg
+    let message = msg hash_msg
+    --putStrLn "LEngth: "
+    --putStrLn $ show $ BS.length hash_msg
+    let signature = signMsgSchnorr keypair message
+    let verified = verifyMsgSchnorr x signature message
+    let verified2 = verifyMsgSchnorr x signature (msg $ fromString raw_msg)
 
     putStrLn "Imported key is:"
     putStrLn $ show mySec
@@ -40,49 +55,36 @@ main = do
     putStrLn $ if myX == myXPub then "YES" else "NO"
     putStrLn ""
 
-    putStrLn "Your secret key is:"
-    --let kp = generateKeyPair
-    --putStrLn $ show $ getKeyPair kp
-    --gen <- newGenIO :: IO CtrDRBG
-    --let Right (randomBytes, newGen) = genBytes 32 gen
-    --putStrLn $ show randomBytes
+    putStrLn "Your key pair is:"
+    putStrLn $ show keypair
+    putStrLn ""
 
-    --let seckey = secKey randomBytes
-    secKey <- generateSecretKey
+    putStrLn "Your secret key is:"
     putStrLn $ show secKey
     putStrLn ""
 
     putStrLn "Your public key is:"
-    let p = derivePubKey secKey
     putStrLn $ show p
     putStrLn ""
 
     putStrLn "Your x only pub key is:"
-    let x = deriveXOnlyPubKey p
     putStrLn $ show x
     putStrLn ""
 
 
-    let raw_msg = "Hello, World!"
-    let hash_msg = hash $ fromString raw_msg
     putStrLn "Test String:"
     putStrLn raw_msg
     putStrLn ""
 
 
-    let message = msg hash_msg
     putStrLn "Hashed:"
     putStrLn $ show message
     putStrLn ""
 
-    --let signature = signMsgSchnorr secKey message
-    let signature = signMsgSchnorr mySec message
     putStrLn "Signature:"
     putStrLn $ show signature
     putStrLn ""
 
-    let verified = verifyMsgSchnorr myXPub signature message
-    let verified2 = verifyMsgSchnorr myX signature message
     putStrLn "Verified:"
     case verified of
         True -> putStrLn "YES"

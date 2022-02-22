@@ -27,8 +27,10 @@ module Crypto.Schnorr
     , verifyMsgSchnorr
 
 
+    , deriveSecKey
+    , importRawXOnlyPubKey
     , generateKeyPair
-    , KeyPair(..)
+    , KeyPair
     , derivePubKey
     , deriveXOnlyPubKey
     , generateSecretKey
@@ -172,20 +174,23 @@ instance IsString SecKey where
 instance Show SecKey where
     showsPrec _ = shows . B16.encodeBase16 . getSecKey
 
+instance Show KeyPair where
+    showsPrec _ = shows . B16.encodeBase16 . getKeyPair
+
 instance Show PubKey where
     showsPrec _ = shows . B16.encodeBase16 . getPubKey
 
 hexToBytes :: String -> BS.ByteString
 hexToBytes = fromRight undefined . B16.decodeBase16 . B8.pack
 
-signMsgSchnorr :: SecKey -> Msg -> SchnorrSig
-signMsgSchnorr (SecKey sec_key) (Msg m) = unsafePerformIO $
+signMsgSchnorr :: KeyPair -> Msg -> SchnorrSig
+signMsgSchnorr (KeyPair sec_key) (Msg m) = unsafePerformIO $
     unsafeUseByteString sec_key $ \(sec_key_ptr, _) ->
     -- enable this line for automatic hashing
     --unsafeUseByteString (SHA256.hash m) $ \(msg_ptr, _) -> do
     unsafeUseByteString m $ \(msg_ptr, _) -> do
     sig_ptr <- mallocBytes 64
-    ret <- schnorrSign ctx sig_ptr msg_ptr sec_key_ptr nullFunPtr nullPtr
+    ret <- schnorrSign ctx sig_ptr msg_ptr sec_key_ptr nullPtr
     unless (isSuccess ret) $ do
         free sig_ptr
         error "could not schnorr-sign message"
@@ -205,6 +210,11 @@ importXOnlyPubKey bs
                 return Nothing
     | otherwise = Nothing
 
+importRawXOnlyPubKey :: ByteString -> Maybe XOnlyPubKey
+importRawXOnlyPubKey bs
+    | BS.length bs == 32 = Just $ XOnlyPubKey bs
+    | otherwise = Nothing
+
 importSchnorrSig :: ByteString -> Maybe SchnorrSig
 importSchnorrSig bs
     | BS.length bs == 64 = Just $ SchnorrSig { getSchnorrSig = bs }
@@ -215,7 +225,17 @@ verifyMsgSchnorr (XOnlyPubKey p) (SchnorrSig s) (Msg m) = unsafePerformIO $
     unsafeUseByteString p $ \(pp, _) ->
     unsafeUseByteString s $ \(sp, _) ->
     unsafeUseByteString m $ \(mp, _) ->
-    isSuccess <$> schnorrSignatureVerify ctx sp mp (fromIntegral $ BS.length m) pp
+    isSuccess <$> schnorrSignatureVerify ctx sp mp 32 pp
+
+deriveSecKey :: KeyPair -> SecKey
+deriveSecKey (KeyPair kp) = unsafePerformIO $
+    unsafeUseByteString kp $ \(kp_ptr, _) -> do
+    sec_key_ptr <- mallocBytes 32
+    ret <- keyPairSecKey ctx sec_key_ptr kp_ptr
+    unless (isSuccess ret) $ do
+        free sec_key_ptr
+        error "could not compute public key"
+    SecKey <$> unsafePackByteString (sec_key_ptr, 32)
 
 derivePubKey :: SecKey -> PubKey
 derivePubKey (SecKey sec_key) = unsafePerformIO $
@@ -254,18 +274,18 @@ deriveXOnlyPubKey (PubKey fk) = unsafePerformIO $ do
 -}
 generateKeyPair :: IO KeyPair
 generateKeyPair = do
-    keypair <- mallocBytes 96
-    sec_key <- mallocBytes 32
-    ret <- keyPairCreate ctx keypair sec_key
-    if isSuccess ret
-        then do
-            free sec_key
-            out <- unsafePackByteString (keypair, 96)
-            return $ KeyPair out
-        else do
-            free keypair
-            free sec_key
-            error "could not generate key pair"
+    gen <- newGenIO :: IO CtrDRBG
+    let Right (randomBytes, newGen) = genBytes 32 gen
+    unsafeUseByteString randomBytes $ \(sec_key, _) -> do
+        keypair <- mallocBytes 96
+        ret <- keyPairCreate ctx keypair sec_key
+        if isSuccess ret
+            then do
+                out <- unsafePackByteString (keypair, 96)
+                return $ KeyPair out
+            else do
+                free keypair
+                error "could not generate key pair"
 
 {-- commented out
 -- int secp256k1_keypair_create(const secp256k1_context* ctx, secp256k1_keypair *keypair, const unsigned char *seckey32) {

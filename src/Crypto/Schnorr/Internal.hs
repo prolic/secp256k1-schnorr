@@ -89,17 +89,18 @@ foreign import ccall safe
     :: CtxFlags
     -> IO Ctx
 
+{- int secp256k1_schnorrsig_sign(const secp256k1_context* ctx, unsigned char *sig64, const unsigned char *msg32, const secp256k1_keypair *keypair, const unsigned char *aux_rand32) { -}
 foreign import ccall safe
     "secp256k1.h secp256k1_schnorrsig_sign"
     schnorrSign
     :: Ctx
     -> Ptr SchnorrSig64
     -> Ptr Msg32
-    -> Ptr SecKey32
+    -> Ptr KeyPair96
     -- TODO
     -- This is actually an "extended nonce function" in the C code. So this signature is broken,
     -- but we pass a nullFunPtr (and this module is Internal), so it doesn't matter right now.
-    -> FunPtr (NonceFun a)
+--    -> FunPtr (NonceFun a)
     -> Ptr a -- ^ nonce data
     -> IO Ret
 
@@ -109,7 +110,7 @@ foreign import ccall safe
     :: Ctx
     -> Ptr SchnorrSig64
     -> Ptr CUChar
-    -> CUInt
+    -> CSize
     -> Ptr XOnlyPubKey64
     -> IO Ret
 
