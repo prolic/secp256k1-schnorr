@@ -6,7 +6,7 @@ import qualified Data.ByteString         as BS
 import qualified Data.ByteString.Base16  as B16
 import qualified Data.ByteString.Char8   as B8
 import           Data.Either             (fromRight)
-import           Data.Maybe              (fromMaybe, isNothing)
+import           Data.Maybe              (fromJust, fromMaybe, isNothing)
 import           Data.String             (fromString)
 import           Data.String.Conversions (cs)
 import           Test.HUnit              (Assertion, assertEqual)
@@ -15,17 +15,6 @@ import           Test.QuickCheck
 
 spec :: Spec
 spec = do
-    describe "serialization" $ do
-        it "serialize secret key" $
-            property serializeSecKeyTest
-        it "shows and reads secret key" $
-            property (showRead :: SecKey -> Bool)
-        it "shows and reads message" $
-            property (showRead :: Msg -> Bool)
-        it "reads secret key from string" $
-            property isStringSecKey
-        it "reads message from string" $
-            property isStringMsg
     describe "schnorr (bip-340)" $ do
         it "validates test vector 0" $
             property bip340Vector0
@@ -46,17 +35,6 @@ spec = do
                 hexToBytes "f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9935554d1aa5f0374e5cdaacb3925035c7c169b27c4426df0a6b19af3baeab138"
               )
 
-hexToBytes :: String -> BS.ByteString
-hexToBytes = fromRight undefined . B16.decodeBase16 . B8.pack
-
-isStringMsg :: Msg -> Bool
-isStringMsg m = m == fromString (cs m') where
-    m' = B16.encodeBase16 $ getMsg m
-
-isStringSecKey :: SecKey -> Bool
-isStringSecKey k = k == fromString (cs hex) where
-    hex = B16.encodeBase16 $ getSecKey k
-
 showRead :: (Show a, Read a, Eq a) => a -> Bool
 showRead x = read (show x) == x
 
@@ -76,8 +54,8 @@ failingVectorToAssertion expectedFailure (pubBytes, msgBytes, sigBytes) =
     computed :: Either VectorError ()
     computed =
         let
-            pubM = importXOnlyPubKey pubBytes
-            sigM = importSchnorrSig sigBytes
+            pubM = xOnlyPubKey pubBytes
+            sigM = schnorrSig sigBytes
             msgM = msg $ msgBytes
         in
             case (pubM, sigM, msgM) of
@@ -104,9 +82,10 @@ passingVectorToAssertion idx (secBytes, msgBytes, sigBytes) =
     assertEqual ("BIP-340 test vector " <> show idx <> " signature matches") expectedSig computedSig
   where
     expectedSig :: Maybe SchnorrSig
-    expectedSig = importSchnorrSig $ sigBytes
+    expectedSig = schnorrSig $ sigBytes
     computedSig :: Maybe SchnorrSig
     computedSig = do
-        sec <- secKey secBytes
+        let sec = fromJust $ secKey secBytes
+        let kp = keyPairFromSecKey sec
         msg <- msg $ msgBytes
-        pure $ signMsgSchnorr sec msg
+        pure $ signMsgSchnorr kp msg
