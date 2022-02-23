@@ -3,7 +3,28 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: DRBG-0.5.5@sha256:3b8040bed356e2b63927a27fb6d5adbd19d70c9e1d1bb66111bbeb33e56900eb,2259
+    pantry-tree:
+      size: 896
+      sha256: 586ee2257b255cb7f2a3663711199f9de9e70445ce7cb192f5af07dd66eadac2
+  original:
+    hackage: DRBG-0.5.5@sha256:3b8040bed356e2b63927a27fb6d5adbd19d70c9e1d1bb66111bbeb33e56900eb,2259
+- completed:
+    hackage: cipher-aes128-0.7.0.6@sha256:6efdf4af08772b6c99e47ec7586bdc26deb33d8ca797c64affcb4bd7aaae9884,3413
+    pantry-tree:
+      size: 1232
+      sha256: c6e97f26dcb0975380131fc0899a2a4d44c5b1adefcfa471fa9008b68300ffac
+  original:
+    hackage: cipher-aes128-0.7.0.6@sha256:6efdf4af08772b6c99e47ec7586bdc26deb33d8ca797c64affcb4bd7aaae9884,3413
+- completed:
+    hackage: cryptohash-sha256-0.11.102.1@sha256:188d0b5a0491e8b686b32d9b144c9287760ba333d2509bf3f17e3d846fbc2332,5629
+    pantry-tree:
+      size: 726
+      sha256: 081a11b38601ba83db14767b7a0664846bd6bc4902c1d3c5efa6ca5e5ee45f51
+  original:
+    hackage: cryptohash-sha256-0.11.102.1@sha256:188d0b5a0491e8b686b32d9b144c9287760ba333d2509bf3f17e3d846fbc2332,5629
 snapshots:
 - completed:
     size: 587113
