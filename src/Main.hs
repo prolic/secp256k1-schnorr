@@ -16,11 +16,11 @@ main = do
   let mySec = fromJust $ secKey $ hexToBytes myprivatekey
   let derivedPub = derivePubKey mySec
   let myXPub = fromJust $ xOnlyPubKey $ hexToBytes mypublickey
-  let myX = deriveXOnlyPubKey derivedPub
+  let myX = deriveXOnlyPubKeyFromPubKey derivedPub
   keypair <- generateKeyPair
   let secKey = deriveSecKey keypair
   let p = derivePubKey secKey
-  let x = deriveXOnlyPubKey p
+  let x = deriveXOnlyPubKeyFromPubKey p
   let ck = combineKeyPair secKey p
   let raw_msg = "Hello, World!"
   let hash_msg = hash $ fromString raw_msg
@@ -91,6 +91,6 @@ main = do
   putStrLn $ show pk
   putStrLn ""
   putStrLn "generated xonly pub:"
-  putStrLn $ show $ deriveXOnlyPubKey $ derivePubKey pppp
+  putStrLn $ show $ deriveXOnlyPubKey pk
   putStrLn ""
   putStrLn "How was that?"

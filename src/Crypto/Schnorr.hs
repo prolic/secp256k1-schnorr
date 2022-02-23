@@ -10,29 +10,38 @@ Portability : POSIX
 Schnorr signatures from Bitcoin’s secp256k1 library.
 -}
 module Crypto.Schnorr
+    -- * Messages
   ( Msg
-  , KeyPair
-  , SecKey
-  , SchnorrSig
-  , XOnlyPubKey
   , msg
-  , secKey
-  , schnorrSig
-  , xOnlyPubKey
-  , signMsgSchnorr
-  , verifyMsgSchnorr
+  , getMsg
+  -- * Key Pairs
+  , KeyPair
   , generateKeyPair
-  , generateSecretKey
   , keyPairFromSecKey
   , combineKeyPair
+  -- * Secret Keys
+  , SecKey
+  , generateSecretKey
+  , secKey
+  , getSecKey
   , deriveSecKey
+  -- * Public Keys
+  , PubKey
+  , pubKey
+  , XOnlyPubKey
+  , xOnlyPubKey
+  , getXOnlyPubKey
   , derivePubKey
   , deriveXOnlyPubKey
-  , hexToBytes
-  , getMsg
-  , getSecKey
+  , deriveXOnlyPubKeyFromPubKey
+  -- * Schnorr Signatures
+  , SchnorrSig
+  , schnorrSig
   , getSchnorrSig
-  , getXOnlyPubKey
+  , signMsgSchnorr
+  , verifyMsgSchnorr
+  -- * Helpers
+  , hexToBytes
   ) where
 
 import           Control.Monad           (unless)
@@ -186,8 +195,12 @@ derivePubKey (SecKey sec_key) =
       error "could not compute public key"
     PubKey <$> unsafePackByteString (pub_key_ptr, 64)
 
-deriveXOnlyPubKey :: PubKey -> XOnlyPubKey
-deriveXOnlyPubKey (PubKey bs) =
+deriveXOnlyPubKey :: KeyPair -> XOnlyPubKey
+deriveXOnlyPubKey kp =
+  deriveXOnlyPubKeyFromPubKey $ derivePubKey $ deriveSecKey kp
+
+deriveXOnlyPubKeyFromPubKey :: PubKey -> XOnlyPubKey
+deriveXOnlyPubKeyFromPubKey (PubKey bs) =
   unsafePerformIO $
   unsafeUseByteString bs $ \(pub_key_ptr, _) -> do
     x_only_pub_key <- mallocBytes 64
@@ -235,6 +248,12 @@ secKey bs
       if ret == 1
         then return $ Just $ SecKey bs
         else return Nothing
+  | otherwise = Nothing
+
+-- | Import 64-byte 'ByteString' as 'PubKey'.
+pubKey :: ByteString -> Maybe PubKey
+pubKey bs
+  | BS.length bs == 64 = Just $ PubKey bs
   | otherwise = Nothing
 
 generateSecretKey :: IO SecKey

@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 module Crypto.SchnorrSpec (spec) where
 
+import           Crypto.Hash.SHA256      (hash)
 import           Crypto.Schnorr
 import qualified Data.ByteString         as BS
 import qualified Data.ByteString.Base16  as B16
@@ -9,6 +10,7 @@ import           Data.Either             (fromRight)
 import           Data.Maybe              (fromJust, fromMaybe, isNothing)
 import           Data.String             (fromString)
 import           Data.String.Conversions (cs)
+import           System.IO.Unsafe        (unsafePerformIO)
 import           Test.HUnit              (Assertion, assertEqual)
 import           Test.Hspec
 import           Test.QuickCheck
@@ -16,8 +18,10 @@ import           Test.QuickCheck
 spec :: Spec
 spec = do
     describe "schnorr (bip-340)" $ do
+    {-
         it "validates test vector 0" $
             property bip340Vector0
+    -}
         it "rejects test vector 5" $
             property $
             failingVectorToAssertion InvalidPubKey
@@ -34,15 +38,8 @@ spec = do
                 hexToBytes "243f6a8885a308d313198a2e03707344a4093822299f31d0082efa98ec4e6c89",
                 hexToBytes "f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9935554d1aa5f0374e5cdaacb3925035c7c169b27c4426df0a6b19af3baeab138"
               )
-
-showRead :: (Show a, Read a, Eq a) => a -> Bool
-showRead x = read (show x) == x
-
-serializeSecKeyTest :: SecKey -> Bool
-serializeSecKeyTest fk =
-    case secKey $ getSecKey fk of
-        Just fk' -> fk == fk'
-        Nothing  -> False
+        it "signs and verifies a message" $
+            property bip340SignAndVerify
 
 data VectorError = InvalidPubKey | InvalidSig | InvalidMsg | InvalidSigFormat
   deriving (Eq, Show)
@@ -89,3 +86,16 @@ passingVectorToAssertion idx (secBytes, msgBytes, sigBytes) =
         let kp = keyPairFromSecKey sec
         msg <- msg $ msgBytes
         pure $ signMsgSchnorr kp msg
+
+bip340SignAndVerify :: Assertion
+bip340SignAndVerify = do
+    assertEqual ("BIP-340 test sign and verify") True isVerified
+  where
+    isVerified = unsafePerformIO $ do
+        kp <- generateKeyPair
+        let xo = deriveXOnlyPubKey kp
+        let raw_msg = "Hello, World!"
+        let hash_msg = hash $ fromString raw_msg
+        let message = fromJust $ msg hash_msg
+        let signature = signMsgSchnorr kp message
+        pure $ verifyMsgSchnorr xo signature message
