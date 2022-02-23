@@ -130,9 +130,7 @@ instance Show XOnlyPubKey where
         out <- unsafePackByteString (serialized, 32)
         return out
 
-hexToBytes :: String -> BS.ByteString
-hexToBytes = fromRight undefined . B16.decodeBase16 . B8.pack
-
+-- | Signs a 32-byte 'Msg' using a 'KeyPair'
 signMsgSchnorr :: KeyPair -> Msg -> SchnorrSig
 signMsgSchnorr (KeyPair sec_key) (Msg m) =
   unsafePerformIO $
@@ -145,26 +143,7 @@ signMsgSchnorr (KeyPair sec_key) (Msg m) =
         error "could not schnorr-sign message"
       SchnorrSig <$> unsafePackByteString (sig_ptr, 64)
 
-xOnlyPubKey :: ByteString -> Maybe XOnlyPubKey
-xOnlyPubKey bs
-  | BS.length bs == 32 =
-    unsafePerformIO $
-    unsafeUseByteString bs $ \(input, len) -> do
-      pub_key <- mallocBytes 64
-      ret <- schnorrXOnlyPubKeyParse ctx pub_key input
-      if isSuccess ret
-        then do
-          out <- unsafePackByteString (pub_key, 64)
-          return $ Just $ XOnlyPubKey out
-        else do
-          return Nothing
-  | otherwise = Nothing
-
-schnorrSig :: ByteString -> Maybe SchnorrSig
-schnorrSig bs
-  | BS.length bs == 64 = Just $ SchnorrSig {getSchnorrSig = bs}
-  | otherwise = Nothing
-
+-- | Verifies a schnorr signature.
 verifyMsgSchnorr :: XOnlyPubKey -> SchnorrSig -> Msg -> Bool
 verifyMsgSchnorr (XOnlyPubKey p) (SchnorrSig s) (Msg m) =
   unsafePerformIO $
@@ -173,44 +152,7 @@ verifyMsgSchnorr (XOnlyPubKey p) (SchnorrSig s) (Msg m) =
       unsafeUseByteString m $ \(mp, _) ->
         isSuccess <$> schnorrSignatureVerify ctx sp mp 32 pp
 
-deriveSecKey :: KeyPair -> SecKey
-deriveSecKey (KeyPair kp) =
-  unsafePerformIO $
-  unsafeUseByteString kp $ \(kp_ptr, _) -> do
-    sec_key_ptr <- mallocBytes 32
-    ret <- keyPairSecKey ctx sec_key_ptr kp_ptr
-    unless (isSuccess ret) $ do
-      free sec_key_ptr
-      error "could not compute public key"
-    SecKey <$> unsafePackByteString (sec_key_ptr, 32)
-
-derivePubKey :: SecKey -> PubKey
-derivePubKey (SecKey sec_key) =
-  unsafePerformIO $
-  unsafeUseByteString sec_key $ \(sec_key_ptr, _) -> do
-    pub_key_ptr <- mallocBytes 64
-    ret <- ecPubKeyCreate ctx pub_key_ptr sec_key_ptr
-    unless (isSuccess ret) $ do
-      free pub_key_ptr
-      error "could not compute public key"
-    PubKey <$> unsafePackByteString (pub_key_ptr, 64)
-
-deriveXOnlyPubKey :: KeyPair -> XOnlyPubKey
-deriveXOnlyPubKey kp =
-  deriveXOnlyPubKeyFromPubKey $ derivePubKey $ deriveSecKey kp
-
-deriveXOnlyPubKeyFromPubKey :: PubKey -> XOnlyPubKey
-deriveXOnlyPubKeyFromPubKey (PubKey bs) =
-  unsafePerformIO $
-  unsafeUseByteString bs $ \(pub_key_ptr, _) -> do
-    x_only_pub_key <- mallocBytes 64
-    ret <- xOnlyPubKeyFromPubKey ctx x_only_pub_key nullPtr pub_key_ptr
-    if isSuccess ret
-      then XOnlyPubKey <$> unsafePackByteString (x_only_pub_key, 64)
-      else do
-        free x_only_pub_key
-        error "could not derive xonly pub key from pub key"
-
+-- | Generate a new 'KeyPair'.
 generateKeyPair :: IO KeyPair
 generateKeyPair = do
   gen <- newGenIO :: IO CtrDRBG
@@ -226,11 +168,86 @@ generateKeyPair = do
         free keypair
         error "could not generate key pair"
 
+-- | Generate new 'SecKey'.
+generateSecretKey :: IO SecKey
+generateSecretKey = do
+  gen <- newGenIO :: IO CtrDRBG
+  let Right (randomBytes, newGen) = genBytes 32 gen
+  unsafeUseByteString randomBytes $ \(sec_key_ptr, _) -> do
+    ret <- ecSecKeyVerify ctx sec_key_ptr
+    if isSuccess ret
+      then return (SecKey randomBytes)
+      else generateSecretKey
+
+-- | Derive 'SecKey' from 'KeyPair'
+deriveSecKey :: KeyPair -> SecKey
+deriveSecKey (KeyPair kp) =
+  unsafePerformIO $
+  unsafeUseByteString kp $ \(kp_ptr, _) -> do
+    sec_key_ptr <- mallocBytes 32
+    ret <- keyPairSecKey ctx sec_key_ptr kp_ptr
+    unless (isSuccess ret) $ do
+      free sec_key_ptr
+      error "could not compute public key"
+    SecKey <$> unsafePackByteString (sec_key_ptr, 32)
+
+-- | Derive 'PubKey' from 'SecKey'.
+derivePubKey :: SecKey -> PubKey
+derivePubKey (SecKey sec_key) =
+  unsafePerformIO $
+  unsafeUseByteString sec_key $ \(sec_key_ptr, _) -> do
+    pub_key_ptr <- mallocBytes 64
+    ret <- ecPubKeyCreate ctx pub_key_ptr sec_key_ptr
+    unless (isSuccess ret) $ do
+      free pub_key_ptr
+      error "could not compute public key"
+    PubKey <$> unsafePackByteString (pub_key_ptr, 64)
+
+-- | Derive 'XOnlyPubKey' from 'KeyPair'.
+deriveXOnlyPubKey :: KeyPair -> XOnlyPubKey
+deriveXOnlyPubKey kp =
+  deriveXOnlyPubKeyFromPubKey $ derivePubKey $ deriveSecKey kp
+
+-- | Derive 'XOnlyPubKey' from 'PubKey'.
+deriveXOnlyPubKeyFromPubKey :: PubKey -> XOnlyPubKey
+deriveXOnlyPubKeyFromPubKey (PubKey bs) =
+  unsafePerformIO $
+  unsafeUseByteString bs $ \(pub_key_ptr, _) -> do
+    x_only_pub_key <- mallocBytes 64
+    ret <- xOnlyPubKeyFromPubKey ctx x_only_pub_key nullPtr pub_key_ptr
+    if isSuccess ret
+      then XOnlyPubKey <$> unsafePackByteString (x_only_pub_key, 64)
+      else do
+        free x_only_pub_key
+        error "could not derive xonly pub key from pub key"
+
 decodeHex :: ConvertibleStrings a ByteString => a -> Maybe ByteString
 decodeHex str =
   case B16.decodeBase16 $ cs str of
     Right bs -> Just bs
     Left _   -> Nothing
+
+-- | Parses a 'XOnlyPubKey' from a given 'ByteString'
+xOnlyPubKey :: ByteString -> Maybe XOnlyPubKey
+xOnlyPubKey bs
+  | BS.length bs == 32 =
+    unsafePerformIO $
+    unsafeUseByteString bs $ \(input, len) -> do
+      pub_key <- mallocBytes 64
+      ret <- schnorrXOnlyPubKeyParse ctx pub_key input
+      if isSuccess ret
+        then do
+          out <- unsafePackByteString (pub_key, 64)
+          return $ Just $ XOnlyPubKey out
+        else do
+          return Nothing
+  | otherwise = Nothing
+
+-- | Parses a 'SchnorrSig' from a given 'ByteString'
+schnorrSig :: ByteString -> Maybe SchnorrSig
+schnorrSig bs
+  | BS.length bs == 64 = Just $ SchnorrSig {getSchnorrSig = bs}
+  | otherwise = Nothing
 
 -- | Import 32-byte 'ByteString' as 'Msg'.
 msg :: ByteString -> Maybe Msg
@@ -256,20 +273,16 @@ pubKey bs
   | BS.length bs == 64 = Just $ PubKey bs
   | otherwise = Nothing
 
-generateSecretKey :: IO SecKey
-generateSecretKey = do
-  gen <- newGenIO :: IO CtrDRBG
-  let Right (randomBytes, newGen) = genBytes 32 gen
-  unsafeUseByteString randomBytes $ \(sec_key_ptr, _) -> do
-    ret <- ecSecKeyVerify ctx sec_key_ptr
-    if isSuccess ret
-      then return (SecKey randomBytes)
-      else generateSecretKey
-
+-- | Combines a 'SecKey' and 'PubKey' into a 'KeyPair'.
 combineKeyPair :: SecKey -> PubKey -> KeyPair
 combineKeyPair (SecKey s) (PubKey p) = KeyPair (s <> p)
 
+-- | Computes a 'KeyPair' given a 'SecKey'.
 keyPairFromSecKey :: SecKey -> KeyPair
 keyPairFromSecKey (SecKey s) = KeyPair (s <> p)
   where
     (PubKey p) = derivePubKey (SecKey s)
+
+-- | Helper function to convert a 'String' to 'ByteString'.
+hexToBytes :: String -> ByteString
+hexToBytes = fromRight undefined . B16.decodeBase16 . B8.pack

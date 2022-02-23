@@ -25,22 +25,14 @@ source-repository head
   type: git
   location: https://github.com/prolic/secp256k1-schnorr.git
 
-flag schnorr
-  description: Enable BIP-340 (Schnorr) APIs
-  manual: True
-  default: True
-
 library
   exposed-modules:
       Crypto.Schnorr
       Crypto.Schnorr.Internal
-      Main
   other-modules:
       Paths_secp256k1_schnorr
   hs-source-dirs:
       src
-  extra-lib-dirs:
-      /usr/local/lib
   pkgconfig-depends:
       libsecp256k1
   build-depends:
@@ -57,40 +49,6 @@ library
     , string-conversions ==0.4.*
     , unliftio-core >=0.1.0 && <0.3
     , utf8-string >=1.0.2 && <1.1
-  if flag(schnorr)
-    cpp-options: -DSCHNORR
-  default-language: Haskell2010
-
-executable app
-  main-is: Main.hs
-  other-modules:
-      Crypto.Schnorr
-      Crypto.Schnorr.Internal
-      Paths_secp256k1_schnorr
-  hs-source-dirs:
-      src
-  ghc-options: -fwarn-incomplete-patterns -threaded
-  extra-lib-dirs:
-      /usr/local/lib
-  pkgconfig-depends:
-      libsecp256k1
-  build-depends:
-      DRBG >=0.5.5 && <0.6
-    , QuickCheck >=2.9.2 && <2.15
-    , base >=4.9 && <5
-    , base16 >=0.3.0.1
-    , bytestring >=0.10.8 && <0.11
-    , cereal >=0.5.4 && <0.6
-    , cryptohash-sha256 >=0.11.102.1 && <0.12
-    , deepseq >=1.4.2 && <1.5
-    , entropy >=0.3.8 && <0.5
-    , hashable >=1.2.6 && <1.4
-    , secp256k1-schnorr
-    , string-conversions ==0.4.*
-    , unliftio-core >=0.1.0 && <0.3
-    , utf8-string >=1.0.2 && <1.1
-  if flag(schnorr)
-    cpp-options: -DSCHNORR
   default-language: Haskell2010
 
 test-suite spec
@@ -102,10 +60,6 @@ test-suite spec
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  extra-lib-dirs:
-      /usr/local/lib
-  extra-libraries:
-      secp256k1
   pkgconfig-depends:
       libsecp256k1
   build-depends:
