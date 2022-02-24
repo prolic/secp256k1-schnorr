@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts  #-}
 
 {-|
 Module      : Crypto.Schnorr
@@ -14,17 +14,21 @@ module Crypto.Schnorr
   ( Msg
   , msg
   , getMsg
+  , exportMsg
   -- * Key Pairs
   , KeyPair
   , generateKeyPair
   , keyPairFromSecKey
   , combineKeyPair
+  , getKeyPair
+  , exportKeyPair
   -- * Secret Keys
   , SecKey
   , generateSecretKey
   , secKey
   , getSecKey
   , deriveSecKey
+  , exportSecKey
   -- * Public Keys
   , PubKey
   , pubKey
@@ -34,13 +38,17 @@ module Crypto.Schnorr
   , derivePubKey
   , deriveXOnlyPubKey
   , deriveXOnlyPubKeyFromPubKey
+  , exportPubKey
+  , exportXOnlyPubKey
   -- * Schnorr Signatures
   , SchnorrSig
   , schnorrSig
   , getSchnorrSig
+  , exportSchnorrSig
   , signMsgSchnorr
   , verifyMsgSchnorr
   -- * Helpers
+  , decodeHex
   , hexToBytes
   ) where
 
@@ -55,6 +63,7 @@ import qualified Data.ByteString.Char8   as B8
 import           Data.ByteString.UTF8    as BUTF8
 import           Data.Either             (fromRight)
 import           Data.String.Conversions (ConvertibleStrings, cs)
+import           Data.Text.Internal      (showText)
 import           Foreign                 (free, mallocBytes, nullPtr)
 import           System.IO.Unsafe        (unsafePerformIO)
 
@@ -129,6 +138,35 @@ instance Show XOnlyPubKey where
           error "could not serialize x-only public key"
         out <- unsafePackByteString (serialized, 32)
         return out
+
+exportText :: ByteString -> String
+exportText = showText . B16.encodeBase16
+
+exportKeyPair :: KeyPair -> String
+exportKeyPair k = exportText $ getKeyPair k
+
+exportMsg :: Msg -> String
+exportMsg m = exportText $ getMsg m
+
+exportPubKey :: PubKey -> String
+exportPubKey p = exportText $ getPubKey p
+
+exportSecKey :: SecKey -> String
+exportSecKey s = exportText $ getSecKey s
+
+exportSchnorrSig :: SchnorrSig -> String
+exportSchnorrSig s = exportText $ getSchnorrSig s
+
+exportXOnlyPubKey :: XOnlyPubKey -> String
+exportXOnlyPubKey (XOnlyPubKey p) = unsafePerformIO $ do
+         unsafeUseByteString p $ \(p_ptr, _) -> do
+           serialized <- mallocBytes 32
+           ret <- schnorrPubKeySerialize ctx serialized p_ptr
+           unless (isSuccess ret) $ do
+             free serialized
+             error "could not serialize x-only public key"
+           out <- unsafePackByteString (serialized, 32)
+           return $ exportText out
 
 -- | Signs a 32-byte 'Msg' using a 'KeyPair'
 signMsgSchnorr :: KeyPair -> Msg -> SchnorrSig
