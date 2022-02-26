@@ -63,7 +63,7 @@ import qualified Data.ByteString.Char8   as B8
 import           Data.ByteString.UTF8    as BUTF8
 import           Data.Either             (fromRight)
 import           Data.String.Conversions (ConvertibleStrings, cs)
-import           Data.Text.Internal      (showText)
+import           Data.Text               (unpack)
 import           Foreign                 (free, mallocBytes, nullPtr)
 import           System.IO.Unsafe        (unsafePerformIO)
 
@@ -140,7 +140,7 @@ instance Show XOnlyPubKey where
         return out
 
 exportText :: ByteString -> String
-exportText = showText . B16.encodeBase16
+exportText = unpack . B16.encodeBase16
 
 exportKeyPair :: KeyPair -> String
 exportKeyPair k = exportText $ getKeyPair k
