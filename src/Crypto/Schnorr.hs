@@ -18,6 +18,7 @@ module Crypto.Schnorr
   -- * Key Pairs
   , KeyPair
   , generateKeyPair
+  , keypair
   , keyPairFromSecKey
   , combineKeyPair
   , getKeyPair
@@ -279,6 +280,12 @@ xOnlyPubKey bs
           return $ Just $ XOnlyPubKey out
         else do
           return Nothing
+  | otherwise = Nothing
+
+-- | Parses a 'KeyPair' from a given 'ByteString'
+keypair :: ByteString -> Maybe KeyPair
+keypair bs
+  | BS.length bs == 92 = Just $ KeyPair {getKeyPair = bs}
   | otherwise = Nothing
 
 -- | Parses a 'SchnorrSig' from a given 'ByteString'
