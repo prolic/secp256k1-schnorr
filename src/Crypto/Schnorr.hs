@@ -50,7 +50,6 @@ module Crypto.Schnorr
   , verifyMsgSchnorr
   -- * Helpers
   , decodeHex
-  , hexToBytes
   ) where
 
 import           Control.Monad           (unless)
@@ -285,7 +284,7 @@ xOnlyPubKey bs
 -- | Parses a 'KeyPair' from a given 'ByteString'
 keypair :: ByteString -> Maybe KeyPair
 keypair bs
-  | BS.length bs == 92 = Just $ KeyPair {getKeyPair = bs}
+  | BS.length bs == 96 = Just $ KeyPair {getKeyPair = bs}
   | otherwise = Nothing
 
 -- | Parses a 'SchnorrSig' from a given 'ByteString'
@@ -327,7 +326,3 @@ keyPairFromSecKey :: SecKey -> KeyPair
 keyPairFromSecKey (SecKey s) = KeyPair (s <> p)
   where
     (PubKey p) = derivePubKey (SecKey s)
-
--- | Helper function to convert a 'String' to 'ByteString'.
-hexToBytes :: String -> ByteString
-hexToBytes = fromRight undefined . B16.decodeBase16 . B8.pack
