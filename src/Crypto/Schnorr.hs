@@ -131,12 +131,12 @@ instance Show XOnlyPubKey where
   showsPrec _ (XOnlyPubKey p) =
     showsEncoded . unsafePerformIO $ do
       unsafeUseByteString p $ \(p_ptr, _) -> do
-        serialized <- mallocBytes 32
+        serialized <- mallocBytes 64
         ret <- schnorrPubKeySerialize ctx serialized p_ptr
         unless (isSuccess ret) $ do
           free serialized
           error "could not serialize x-only public key"
-        out <- unsafePackByteString (serialized, 32)
+        out <- unsafePackByteString (serialized, 64)
         return out
 
 exportText :: ByteString -> String
@@ -160,12 +160,12 @@ exportSchnorrSig s = exportText $ getSchnorrSig s
 exportXOnlyPubKey :: XOnlyPubKey -> String
 exportXOnlyPubKey (XOnlyPubKey p) = unsafePerformIO $ do
          unsafeUseByteString p $ \(p_ptr, _) -> do
-           serialized <- mallocBytes 32
+           serialized <- mallocBytes 64
            ret <- schnorrPubKeySerialize ctx serialized p_ptr
            unless (isSuccess ret) $ do
              free serialized
              error "could not serialize x-only public key"
-           out <- unsafePackByteString (serialized, 32)
+           out <- unsafePackByteString (serialized, 64)
            return $ exportText out
 
 -- | Signs a 32-byte 'Msg' using a 'KeyPair'

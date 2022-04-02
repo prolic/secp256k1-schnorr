@@ -9,7 +9,7 @@ copyright: (c) 2022 Sascha-Oliver Prolic
 license: MIT
 license-file: LICENSE
 github: prolic/secp256k1-schnorr.git
-homepage: http://github.com/prolic/secp256k1-schnorr#readme
+homepage: https://github.com/prolic/secp256k1-schnorr#readme
 verbatim:
   cabal-version: 1.24
 extra-source-files:
@@ -34,6 +34,10 @@ library:
   source-dirs: src
   pkg-config-dependencies:
     - libsecp256k1
+  extra-include-dirs:
+    - /usr/local/include
+  extra-lib-dirs:
+    - /usr/local/lib
 tests:
   spec:
     main: Spec.hs

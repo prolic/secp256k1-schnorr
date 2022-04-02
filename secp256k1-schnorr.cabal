@@ -9,7 +9,7 @@ version:        0.0.1
 synopsis:       Schnorr signatures for secp256k1
 description:    Schnorr signatures using the secp256k1 library.
 category:       Crypto
-homepage:       http://github.com/prolic/secp256k1-schnorr#readme
+homepage:       https://github.com/prolic/secp256k1-schnorr#readme
 bug-reports:    https://github.com/prolic/secp256k1-schnorr.git/issues
 author:         Sascha-Oliver Prolic
 maintainer:     saschaprolic@googlemail.com
@@ -33,6 +33,8 @@ library
       Paths_secp256k1_schnorr
   hs-source-dirs:
       src
+  extra-lib-dirs:
+      /usr/local/lib
   pkgconfig-depends:
       libsecp256k1
   build-depends:

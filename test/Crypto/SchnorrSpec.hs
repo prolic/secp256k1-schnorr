@@ -99,3 +99,7 @@ bip340SignAndVerify = do
         let message = fromJust $ msg hash_msg
         let signature = signMsgSchnorr kp message
         pure $ verifyMsgSchnorr xo signature message
+
+-- | Helper function to convert a 'String' to 'ByteString'.
+hexToBytes :: String -> BS.ByteString
+hexToBytes = fromRight undefined . B16.decodeBase16 . B8.pack
