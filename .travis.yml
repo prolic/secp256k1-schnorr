@@ -24,7 +24,6 @@ addons:
     apt:
         packages:
             - libgmp-dev
-            - libsecp256k1-dev
 
 before_install:
     # Download and unpack the stack executable
@@ -34,8 +33,14 @@ before_install:
 
 install:
     # Build dependencies
-    - stack --no-terminal --install-ghc test --only-dependencies
+  - git clone https://github.com/bitcoin-core/secp256k1
+  - cd secp256k1
+  - ./autogen.sh
+  - ./configure --enable-module-schnorrsig --enable-module-extrakeys --enable-module-ecdh --enable-experimental
+  - make
+  - sudo make install
+  - cd ..
 
 script:
-    # Build the package, its tests, and its docs and run the tests
-    - stack --no-terminal test --haddock --no-haddock-deps
+    # Build the package
+    - stack build

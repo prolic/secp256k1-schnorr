@@ -62,7 +62,9 @@ test-suite spec
       Paths_secp256k1_schnorr
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -O2 -static
+  cc-options: -static
+  ld-options: -static -pthread
   pkgconfig-depends:
       libsecp256k1
   build-depends:
