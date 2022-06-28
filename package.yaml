@@ -48,6 +48,10 @@ tests:
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
+      - -O2
+      - -static
+    ld-options: -static -pthread
+    cc-options: -static
     verbatim:
       build-tool-depends:
           hspec-discover:hspec-discover
