@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/prolic/secp256k1-schnorr.svg?branch=master)](https://travis-ci.org/prolic/secp256k1-schnorr)
+[![Build Status](https://app.travis-ci.com/prolic/secp256k1-schnorr.svg?branch=master)](https://app.travis-ci.com/prolic/secp256k1-schnorr)
 
 # Haskell bindings for secp256k1
 
