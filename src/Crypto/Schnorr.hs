@@ -10,12 +10,12 @@ Portability : POSIX
 Schnorr signatures from Bitcoin’s secp256k1 library.
 -}
 module Crypto.Schnorr
-  -- * Messages
+  -- Messages
   ( Msg
   , msg
   , getMsg
   , exportMsg
-  -- * Key Pairs
+  -- Key Pairs
   , KeyPair
   , generateKeyPair
   , keypair
@@ -23,14 +23,14 @@ module Crypto.Schnorr
   , combineKeyPair
   , getKeyPair
   , exportKeyPair
-  -- * Secret Keys
+  -- Secret Keys
   , SecKey
   , generateSecretKey
   , secKey
   , getSecKey
   , deriveSecKey
   , exportSecKey
-  -- * Public Keys
+  -- Public Keys
   , PubKey
   , pubKey
   , XOnlyPubKey
@@ -41,14 +41,14 @@ module Crypto.Schnorr
   , deriveXOnlyPubKeyFromPubKey
   , exportPubKey
   , exportXOnlyPubKey
-  -- * Schnorr Signatures
+  -- Schnorr Signatures
   , SchnorrSig
   , schnorrSig
   , getSchnorrSig
   , exportSchnorrSig
   , signMsgSchnorr
   , verifyMsgSchnorr
-  -- * Helpers
+  -- Helpers
   , decodeHex
   ) where
 
