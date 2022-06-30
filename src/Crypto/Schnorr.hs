@@ -10,7 +10,7 @@ Portability : POSIX
 Schnorr signatures from Bitcoin’s secp256k1 library.
 -}
 module Crypto.Schnorr
-    -- * Messages
+  -- * Messages
   ( Msg
   , msg
   , getMsg
